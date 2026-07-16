@@ -1,5 +1,45 @@
 var sigInst, canvas, $GP
 
+// ===================================================
+// ULTIMATIVER HOOK FÜR PFEILE (LOW-LEVEL RENDERER)
+// ===================================================
+// Wir klinken uns direkt in die globale Zeichenfunktion der alten Engine ein.
+// Jede gezeichnete Linie wird hier abgefangen und mit einer Pfeilspitze versehen!
+if (sigma && sigma.tools && sigma.tools.drawEdge) {
+    var originalDrawEdge = sigma.tools.drawEdge;
+    sigma.tools.drawEdge = function(ctx, x1, y1, x2, y2, size, color, type) {
+        // 1. Original-Linie zeichnen (als gerade Linie "line")
+        originalDrawEdge(ctx, x1, y1, x2, y2, size, color, "line");
+
+        // 2. Winkel berechnen
+        var angle = Math.atan2(y2 - y1, x2 - x1);
+
+        // 3. Pfeilspitze kurz vor dem Zielknoten positionieren
+        // Ein Abstand von ca. 15-18 Pixeln sorgt dafür, dass die Spitze am Rand des Knotens liegt
+        var stopDist = 15 + (size * 0.4); 
+        var arrowX = x2 - stopDist * Math.cos(angle);
+        var arrowY = y2 - stopDist * Math.sin(angle);
+
+        // 4. Pfeil zeichnen (skaliert dynamisch mit der Kantenstärke)
+        var arrowSize = Math.max(size * 2.5, 8);
+        ctx.fillStyle = color;
+        ctx.beginPath();
+        ctx.moveTo(arrowX, arrowY);
+        ctx.lineTo(
+            arrowX - arrowSize * Math.cos(angle - Math.PI / 8),
+            arrowY - arrowSize * Math.sin(angle - Math.PI / 8)
+        );
+        ctx.lineTo(
+            arrowX - arrowSize * Math.cos(angle + Math.PI / 8),
+            arrowY - arrowSize * Math.sin(angle + Math.PI / 8)
+        );
+        ctx.closePath();
+        ctx.fill();
+    };
+}
+// ===================================================
+
+
 //Load configuration file
 var config={};
 
@@ -63,6 +103,7 @@ function initSigma(config) {
         activeFontStyle: "bold"
     };
     
+    // Große Werte für maximale Kantenstärke für exzellente Sichtbarkeit der Gewichte
     graphProps={
         minNodeSize: 4,
         maxNodeSize: 22,
@@ -117,60 +158,6 @@ function initSigma(config) {
 		a.bind("upnodes", function (a) {
 		    nodeActive(a.content[0])
 		});
-
-		// ==========================================
-		// RETTUNG: CANVAS POST-RENDER DIRECT INJECTION
-		// ==========================================
-		// Wir warten, bis Sigma fertig gezeichnet hat, und malen die Pfeilspitzen selbst über das Canvas!
-		a.bind("draw", function() {
-			var edgeCanvas = sigInst._core.domElements.edges;
-			if (!edgeCanvas) return;
-			var ctx = edgeCanvas.getContext('2d');
-			if (!ctx) return;
-
-			sigInst.iterEdges(function(e) {
-				if (e.hidden) return;
-
-				// Hole die aktuellen Bildschirm-Koordinaten der beiden verbundenen Knoten
-				var sourceNode = sigInst._core.graph.nodesIndex[e.source];
-				var targetNode = sigInst._core.graph.nodesIndex[e.target];
-				if (!sourceNode || !targetNode || sourceNode.hidden || targetNode.hidden) return;
-
-				var x1 = sourceNode.displayX;
-				var y1 = sourceNode.displayY;
-				var x2 = targetNode.displayX;
-				var y2 = targetNode.displayY;
-
-				var size = e.size || 1;
-				var color = e.color || "#000000";
-				var targetSize = targetNode.displaySize || 4;
-
-				// Berechne Winkel der Verbindungslinie
-				var angle = Math.atan2(y2 - y1, x2 - x1);
-
-				// Abstand berechnen, damit die Spitze exakt an der Außenkante des Knotens stoppt
-				var stopDist = targetSize + (size * 0.3) + 2; 
-				var arrowX = x2 - stopDist * Math.cos(angle);
-				var arrowY = y2 - stopDist * Math.sin(angle);
-
-				// Zeichne das Pfeildreieck auf die oberste Canvas-Ebene
-				var arrowSize = Math.max(size * 2.5, 8);
-				ctx.fillStyle = color;
-				ctx.beginPath();
-				ctx.moveTo(arrowX, arrowY);
-				ctx.lineTo(
-					arrowX - arrowSize * Math.cos(angle - Math.PI / 8),
-					arrowY - arrowSize * Math.sin(angle - Math.PI / 8)
-				);
-				ctx.lineTo(
-					arrowX - arrowSize * Math.cos(angle + Math.PI / 8),
-					arrowY - arrowSize * Math.sin(angle + Math.PI / 8)
-				);
-				ctx.closePath();
-				ctx.fill();
-			});
-		});
-		// ==========================================
 
 		a.draw();
 		configSigmaElements(config);
