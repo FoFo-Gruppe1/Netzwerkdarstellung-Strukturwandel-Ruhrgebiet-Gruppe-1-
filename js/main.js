@@ -57,21 +57,19 @@ function initSigma(config) {
         defaultHoverLabelBGColor: "#002147",
         defaultLabelHoverColor: "#fff",
         labelThreshold: 10,
-        defaultEdgeType: "curve",
+        defaultEdgeType: "arrow", // Standardmäßig auf Pfeile setzen
         hoverFontStyle: "bold",
         fontStyle: "bold",
         activeFontStyle: "bold"
     };
     
-    if (config.sigma && config.sigma.graphProperties)	
-    	graphProps=config.sigma.graphProperties;
-    else
-    	graphProps={
-        minNodeSize: 1,
-        maxNodeSize: 7,
-        minEdgeSize: 0.2,
-        maxEdgeSize: 0.5
-    	};
+    // Wir setzen hier extrem große Werte an, damit die Unterschiede der Gewichte sichtbar werden!
+    graphProps={
+        minNodeSize: 4,
+        maxNodeSize: 22,
+        minEdgeSize: 2.0,
+        maxEdgeSize: 12.0
+    };
 	
 	if (config.sigma && config.sigma.mouseProperties) 
 		mouseProps=config.sigma.mouseProperties;
@@ -103,11 +101,13 @@ function initSigma(config) {
 		
 		);
 
-		// Zwinge alle Kanten gerade Pfeile zu sein und skaliere die Stärke basierend auf dem Gephi-Gewicht
+		// Zwinge jede einzelne Kante im Web, dicker und als Pfeil dargestellt zu werden
 		a.iterEdges(
 			function (e) {
 				e.type = "arrow";
-				e.size = (e.size) ? e.size * 2.5 : 1.5; // Erhöht die Kantendicke spürbar im Web
+				// Wir multiplizieren das Gewicht, um einen echten visuellen Unterschied zu erzeugen
+				var weight = parseFloat(e.size) || 1.0;
+				e.size = weight * 4.0; 
 			}
 		);
 	
