@@ -57,13 +57,13 @@ function initSigma(config) {
         defaultHoverLabelBGColor: "#002147",
         defaultLabelHoverColor: "#fff",
         labelThreshold: 10,
-        defaultEdgeType: "directed", // Geändert auf "directed" für Pfeile
+        defaultEdgeType: "directed", // Pfeile aktivieren
         hoverFontStyle: "bold",
         fontStyle: "bold",
         activeFontStyle: "bold"
     };
     
-    // Große Werte für maximale Kantenstärke für exzellente Sichtbarkeit der Gewichte
+    // Maximale Kantenbreite für perfekten Gewichts-Kontrast
     graphProps={
         minNodeSize: 4,
         maxNodeSize: 22,
@@ -101,13 +101,13 @@ function initSigma(config) {
 		
 		);
 
-		// Zwinge jede Kante ein gerader Pfeil zu sein und berechne extremere Stärkeunterschiede
+		// Kanten-Tuning: Macht Kanten exponentiell dicker UND zwingt den Typ "directed" auf
 		a.iterEdges(
 			function (e) {
-				e.type = "directed"; // Hier "directed" statt "arrow" erzwingen!
+				e.type = "directed"; // WICHTIG: Erzwingt den gerichteten Typ (mit Pfeil)
 				var rawWeight = parseFloat(e.size) || 1.0;
 				
-				// Exponentielle Skalierung: Dünne Kanten bleiben dünn, dicke Beziehungen werden massiv
+				// Exponentielle Skalierung für maximalen Kontrast
 				if (rawWeight > 1.5) {
 					e.size = Math.pow(rawWeight, 2.3) * 3.5; 
 				} else {
