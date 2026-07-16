@@ -1,5 +1,64 @@
 var sigInst, canvas, $GP
 
+// ==========================================
+// MAGISCHER PFEIL-ZEICHNER (CUSTOM RENDERER)
+// ==========================================
+// Da die alte sigma.js keine Pfeile unterstützt, klinken wir uns hier
+// direkt in das Canvas-Rendering ein, um Pfeile manuell zu zeichnen!
+sigma.tools.drawDirectedEdge = function(canvas, x1, y1, x2, y2, size, color, nodeSize) {
+  var ctx = canvas.getContext('2d');
+  ctx.strokeStyle = color;
+  ctx.lineWidth = size;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+
+  // Berechne den Winkel der Verbindungslinie
+  var angle = Math.atan2(y2 - y1, x2 - x1);
+  
+  // Wir stoppen die Pfeilspitze kurz vor dem Mittelpunkt des Zielknotens,
+  // damit sie genau an der Außenkante des Kreises sichtbar wird!
+  var stopDist = nodeSize + size + 2; 
+  var arrowX = x2 - stopDist * Math.cos(angle);
+  var arrowY = y2 - stopDist * Math.sin(angle);
+
+  // Zeichne das Pfeildreieck
+  var arrowSize = Math.max(size * 2.2, 7); // Die Pfeilspitze skaliert mit der Kantenstärke!
+  ctx.fillStyle = color;
+  ctx.beginPath();
+  ctx.moveTo(arrowX, arrowY);
+  ctx.lineTo(
+    arrowX - arrowSize * Math.cos(angle - Math.PI / 7),
+    arrowY - arrowSize * Math.sin(angle - Math.PI / 7)
+  );
+  ctx.lineTo(
+    arrowX - arrowSize * Math.cos(angle + Math.PI / 7),
+    arrowY - arrowSize * Math.sin(angle + Math.PI / 7)
+  );
+  ctx.closePath();
+  ctx.fill();
+};
+
+// Überschreibe die Standard-Zeichenmethode von Sigma für gerichtete Kanten
+sigma.canvas.edges.directed = function(edge, source, target, setting) {
+  var color = edge.color || setting('defaultEdgeColor');
+  var size = edge.size || setting('defaultEdgeSize');
+  
+  sigma.tools.drawDirectedEdge(
+    sigInst._core.domElements.edges,
+    source.displayX,
+    source.displayY,
+    target.displayX,
+    target.displayY,
+    size,
+    color,
+    target.displaySize
+  );
+};
+// ==========================================
+
+
 //Load configuration file
 var config={};
 
@@ -57,13 +116,13 @@ function initSigma(config) {
         defaultHoverLabelBGColor: "#002147",
         defaultLabelHoverColor: "#fff",
         labelThreshold: 10,
-        defaultEdgeType: "directed", // Pfeile aktivieren
+        defaultEdgeType: "directed", // Verwendet unsere neue "directed"-Zeichenmethode
         hoverFontStyle: "bold",
         fontStyle: "bold",
         activeFontStyle: "bold"
     };
     
-    // Maximale Kantenbreite für perfekten Gewichts-Kontrast
+    // Maximale Kantenstärke für exzellenten Kontrast der Gewichte
     graphProps={
         minNodeSize: 4,
         maxNodeSize: 22,
@@ -435,6 +494,7 @@ function showGroups(a) {
     a ? ($GP.intro.find("#showGroups").text("Hide groups"), $GP.bg.show(), $GP.bg2.hide(), $GP.showgroup = !0) : ($GP.intro.find("#showGroups").text("View Groups"), $GP.bg.hide(), $GP.bg2.show(), $GP.showgroup = !1)
 }
 
+// Rest des Codes bleibt unverändert...
 function nodeNormal() {
     !0 != $GP.calculating && !1 != sigInst.detail && (showGroups(!1), $GP.calculating = !0, sigInst.detail = !0, $GP.info.delay(400).animate({width:'hide'},350),$GP.cluster.hide(), sigInst.iterEdges(function (a) {
         a.attr.color = !1;
