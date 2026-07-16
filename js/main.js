@@ -85,20 +85,22 @@ function initSigma(config) {
     a.detail = !1;
 
     // ==========================================================
-    // UNBLOCKIERBARER LOW-LEVEL PIXEL-INJEKTOR (PFEIL-HOOK)
+    // ABSOLUTE ZEICHENGARANTIE: OVERLAY-INJEKTOR FÜR DIE PFEILE
     // ==========================================================
-    // Wir klinken uns direkt in die Haupt-Zeichenmethode der Instanz ein.
-    // Sobald Sigma fertig gezeichnet hat, malen wir unsere Pfeilspitzen.
+    // Wir fangen das draw-Ereignis ab und zeichnen die Pfeile direkt auf das 
+    // oberste Canvas (meist die Labels), damit sie von Sigma nicht gelöscht werden.
     var originalDraw = a.draw;
     a.draw = function() {
-        // 1. Lass Sigma ganz normal alles zeichnen
+        // 1. Sigma ganz normal zeichnen lassen
         originalDraw.apply(a, arguments);
         
         try {
-            // 2. Greife das Kanten-Canvas direkt ab
-            var edgeCanvas = a._core.domElements.edges;
-            if (edgeCanvas) {
-                var ctx = edgeCanvas.getContext('2d');
+            // Wir suchen das absolut oberste sichtbare Canvas im DOM (Labels oder Nodes)
+            var canvasList = document.querySelectorAll("#sigma-canvas canvas");
+            if (canvasList.length > 0) {
+                // targetCanvas ist das oberste Canvas (das über den Kanten liegt)
+                var targetCanvas = canvasList[canvasList.length - 1];
+                var ctx = targetCanvas.getContext('2d');
                 if (ctx) {
                     a.iterEdges(function(e) {
                         if (e.hidden) return;
@@ -116,15 +118,15 @@ function initSigma(config) {
                         var color = e.color || "#000000";
                         var targetSize = targetNode.displaySize || 4;
 
-                        // Winkel der Beziehungslinie berechnen
+                        // Winkel berechnen
                         var angle = Math.atan2(y2 - y1, x2 - x1);
 
-                        // Positioniere die Pfeilspitze exakt am Rand des Zielknotens
-                        var stopDist = targetSize + (size * 0.35) + 1.5; 
+                        // Exakte Landezone am Knotenrand definieren
+                        var stopDist = targetSize + (size * 0.3) + 2.0; 
                         var arrowX = x2 - stopDist * Math.cos(angle);
                         var arrowY = y2 - stopDist * Math.sin(angle);
 
-                        // Zeichne die Pfeilspitze direkt auf das Canvas
+                        // Pfeildreieck auf die oberste Ebene zeichnen
                         var arrowSize = Math.max(size * 2.5, 8.5);
                         ctx.fillStyle = color;
                         ctx.beginPath();
@@ -143,7 +145,7 @@ function initSigma(config) {
                 }
             }
         } catch(err) {
-            console.error("Fehler beim Pfeil-Rendering:", err);
+            console.error("Pfeil-Zeichnen fehlgeschlagen:", err);
         }
     };
     // ==========================================================
