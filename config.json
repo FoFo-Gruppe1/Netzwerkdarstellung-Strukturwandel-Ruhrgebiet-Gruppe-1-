@@ -8,19 +8,19 @@
     "text": ""
   },
   "text": {
-    "more": "",
-    "intro": "Netzwerkdarstellung Strukurwandel Ruhrgebiet (Gruppe 1)",
-    "title": ""
+    "title": "Strukturwandel Ruhrgebiet (Gruppe 1)",
+    "intro": "Netzwerkdarstellung: Interaktive Analyse der Stakeholder-Beziehungen im Ruhrgebiet.",
+    "more": "Nutzen Sie den Group Selector auf der linken Seite, um gezielt nach den 6 Analyseclustern zu filtern. Die Suche ermöglicht das Auffinden einzelner Stakeholder."
   },
   "legend": {
-    "edgeLabel": "",
-    "colorLabel": "",
-    "nodeLabel": ""
+    "edgeLabel": "Beziehungstyp",
+    "colorLabel": "Analyse-Cluster",
+    "nodeLabel": "Stakeholder"
   },
   "features": {
     "search": true,
     "groupSelectorAttribute": "cluster",
-    "hoverBehavior": "default"
+    "hoverBehavior": "dim"
   },
   "informationPanel": {
     "groupByEdgeDirection": false,
@@ -28,22 +28,22 @@
   },
   "sigma": {
     "drawingProperties": {
-      "defaultEdgeType": "curve",
+      "defaultEdgeType": "arrow",
       "defaultHoverLabelBGColor": "#002147",
-      "defaultLabelBGColor": "#ddd",
+      "defaultLabelBGColor": "#ffffff",
       "activeFontStyle": "bold",
-      "defaultLabelColor": "#000",
-      "labelThreshold": 10,
-      "defaultLabelHoverColor": "#fff",
+      "defaultLabelColor": "#000000",
+      "labelThreshold": 0,
+      "defaultLabelHoverColor": "#ffffff",
       "fontStyle": "bold",
       "hoverFontStyle": "bold",
       "defaultLabelSize": 14
     },
     "graphProperties": {
-      "maxEdgeSize": 0.5,
-      "minEdgeSize": 0.2,
-      "minNodeSize": 1,
-      "maxNodeSize": 7
+      "maxEdgeSize": 4.0,
+      "minEdgeSize": 1.0,
+      "minNodeSize": 4,
+      "maxNodeSize": 22
     },
     "mouseProperties": {
       "maxRatio": 20,
