@@ -85,23 +85,23 @@ function initSigma(config) {
     a.detail = !1;
 
     // ==========================================================
-    // ABSOLUTE ZEICHENGARANTIE: OVERLAY-INJEKTOR FÜR DIE PFEILE
+    // ABSOLUT SICHERER & ISOLIERTER PFEIL-RENDERER
     // ==========================================================
-    // Wir fangen das draw-Ereignis ab und zeichnen die Pfeile direkt auf das 
-    // oberste Canvas (meist die Labels), damit sie von Sigma nicht gelöscht werden.
     var originalDraw = a.draw;
     a.draw = function() {
-        // 1. Sigma ganz normal zeichnen lassen
+        // 1. Erst Sigma ganz normal zeichnen lassen
         originalDraw.apply(a, arguments);
         
         try {
-            // Wir suchen das absolut oberste sichtbare Canvas im DOM (Labels oder Nodes)
+            // Wir greifen uns das oberste Canvas
             var canvasList = document.querySelectorAll("#sigma-canvas canvas");
             if (canvasList.length > 0) {
-                // targetCanvas ist das oberste Canvas (das über den Kanten liegt)
                 var targetCanvas = canvasList[canvasList.length - 1];
                 var ctx = targetCanvas.getContext('2d');
                 if (ctx) {
+                    // Sicherheits-Zustand des Canvas speichern
+                    ctx.save();
+
                     a.iterEdges(function(e) {
                         if (e.hidden) return;
 
@@ -114,22 +114,30 @@ function initSigma(config) {
                         var x2 = targetNode.displayX;
                         var y2 = targetNode.displayY;
 
-                        var size = e.size || 1;
+                        // Harte Sicherheitsprüfung auf gültige Zahlenwerte
+                        if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) return;
+
+                        var size = parseFloat(e.size) || 1;
                         var color = e.color || "#000000";
-                        var targetSize = targetNode.displaySize || 4;
+                        var targetSize = parseFloat(targetNode.displaySize) || 4;
 
                         // Winkel berechnen
                         var angle = Math.atan2(y2 - y1, x2 - x1);
+                        if (isNaN(angle)) return;
 
                         // Exakte Landezone am Knotenrand definieren
                         var stopDist = targetSize + (size * 0.3) + 2.0; 
                         var arrowX = x2 - stopDist * Math.cos(angle);
                         var arrowY = y2 - stopDist * Math.sin(angle);
 
-                        // Pfeildreieck auf die oberste Ebene zeichnen
-                        var arrowSize = Math.max(size * 2.5, 8.5);
-                        ctx.fillStyle = color;
+                        var arrowSize = Math.max(size * 2.3, 8.0);
+
+                        // Pfad-Isolierung: Wir starten einen komplett frischen Zeichenpfad
                         ctx.beginPath();
+                        ctx.fillStyle = color;
+                        ctx.strokeStyle = color;
+                        ctx.lineWidth = 1;
+                        
                         ctx.moveTo(arrowX, arrowY);
                         ctx.lineTo(
                             arrowX - arrowSize * Math.cos(angle - Math.PI / 8),
@@ -139,9 +147,13 @@ function initSigma(config) {
                             arrowX - arrowSize * Math.cos(angle + Math.PI / 8),
                             arrowY - arrowSize * Math.sin(angle + Math.PI / 8)
                         );
-                        ctx.closePath();
-                        ctx.fill();
+                        
+                        ctx.closePath(); // Schließt exakt NUR unser Dreieck
+                        ctx.fill();      // Füllt exakt NUR unser Dreieck aus
                     });
+
+                    // Canvas-Zustand wiederherstellen
+                    ctx.restore();
                 }
             }
         } catch(err) {
