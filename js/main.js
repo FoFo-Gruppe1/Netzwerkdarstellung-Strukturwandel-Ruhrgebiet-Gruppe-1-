@@ -57,18 +57,18 @@ function initSigma(config) {
         defaultHoverLabelBGColor: "#002147",
         defaultLabelHoverColor: "#fff",
         labelThreshold: 10,
-        defaultEdgeType: "arrow", // Standardmäßig auf Pfeile setzen
+        defaultEdgeType: "arrow", // Hier wird der Pfeil-Modus als Standard definiert
         hoverFontStyle: "bold",
         fontStyle: "bold",
         activeFontStyle: "bold"
     };
     
-    // Wir setzen hier extrem große Werte an, damit die Unterschiede der Gewichte sichtbar werden!
+    // Maximale Kantenbreite hochgesetzt auf 20.0, um den Kontrast extrem zu machen!
     graphProps={
         minNodeSize: 4,
         maxNodeSize: 22,
-        minEdgeSize: 2.0,
-        maxEdgeSize: 12.0
+        minEdgeSize: 1.0,
+        maxEdgeSize: 20.0
     };
 	
 	if (config.sigma && config.sigma.mouseProperties) 
@@ -101,13 +101,18 @@ function initSigma(config) {
 		
 		);
 
-		// Zwinge jede einzelne Kante im Web, dicker und als Pfeil dargestellt zu werden
+		// Zwinge jede Kante ein gerader Pfeil zu sein und berechne extremere Stärkeunterschiede
 		a.iterEdges(
 			function (e) {
 				e.type = "arrow";
-				// Wir multiplizieren das Gewicht, um einen echten visuellen Unterschied zu erzeugen
-				var weight = parseFloat(e.size) || 1.0;
-				e.size = weight * 4.0; 
+				var rawWeight = parseFloat(e.size) || 1.0;
+				
+				// Exponentielle Skalierung: Dünne Kanten bleiben dünn, dicke Beziehungen explodieren förmlich!
+				if (rawWeight > 1.5) {
+					e.size = Math.pow(rawWeight, 2.3) * 3.5; 
+				} else {
+					e.size = rawWeight * 1.5;
+				}
 			}
 		);
 	
