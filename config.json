@@ -9,8 +9,8 @@
   },
   "text": {
     "title": "Strukturwandel Ruhrgebiet (Gruppe 1)",
-    "intro": "Netzwerkdarstellung: Interaktive Analyse der Stakeholder-Beziehungen im Ruhrgebiet.",
-    "more": "Nutzen Sie den Group Selector auf der linken Seite, um gezielt nach den 6 Analyseclustern zu filtern. Die Suche ermöglicht das Auffinden einzelner Stakeholder."
+    "intro": "Interaktive Analyse der Stakeholder-Beziehungen im Ruhrgebiet.",
+    "more": "Nutzen Sie die Suchfunktion oben links, um gezielt einzelne Stakeholder im Beziehungsgeflecht aufzufinden."
   },
   "legend": {
     "edgeLabel": "Beziehungstyp",
@@ -19,11 +19,11 @@
   },
   "features": {
     "search": true,
-    "groupSelectorAttribute": "cluster",
+    "groupSelectorAttribute": false,
     "hoverBehavior": "dim"
   },
   "informationPanel": {
-    "groupByEdgeDirection": false,
+    "groupByEdgeDirection": true,
     "imageAttribute": false
   },
   "sigma": {
@@ -37,12 +37,13 @@
       "defaultLabelHoverColor": "#ffffff",
       "fontStyle": "bold",
       "hoverFontStyle": "bold",
-      "defaultLabelSize": 14
+      "defaultLabelSize": 14,
+      "edgeColor": "source"
     },
     "graphProperties": {
-      "maxEdgeSize": 4.0,
-      "minEdgeSize": 1.0,
-      "minNodeSize": 4,
+      "minEdgeSize": 1.5,
+      "maxEdgeSize": 5.0,
+      "minNodeSize": 5,
       "maxNodeSize": 22
     },
     "mouseProperties": {
