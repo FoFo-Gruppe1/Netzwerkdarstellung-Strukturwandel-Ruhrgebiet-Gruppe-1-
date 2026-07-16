@@ -85,79 +85,88 @@ function initSigma(config) {
     a.detail = !1;
 
     // ==========================================================
-    // ABSOLUT SICHERER & ISOLIERTER PFEIL-RENDERER
+    // ABSOLUT SICHERES OVERLAY-CANVAS (KEINE PFAD-KONFLIKTE MEHR)
     // ==========================================================
     var originalDraw = a.draw;
     a.draw = function() {
-        // 1. Erst Sigma ganz normal zeichnen lassen
+        // 1. Sigma ganz normal zeichnen lassen
         originalDraw.apply(a, arguments);
         
         try {
-            // Wir greifen uns das oberste Canvas
-            var canvasList = document.querySelectorAll("#sigma-canvas canvas");
-            if (canvasList.length > 0) {
-                var targetCanvas = canvasList[canvasList.length - 1];
-                var ctx = targetCanvas.getContext('2d');
-                if (ctx) {
-                    // Sicherheits-Zustand des Canvas speichern
-                    ctx.save();
+            var container = document.getElementById("sigma-canvas");
+            if (!container) return;
+            
+            // Eigenes Overlay-Canvas suchen oder neu erstellen
+            var overlay = document.getElementById("sigma-arrows-overlay");
+            if (!overlay) {
+                overlay = document.createElement("canvas");
+                overlay.id = "sigma-arrows-overlay";
+                overlay.style.position = "absolute";
+                overlay.style.top = "0";
+                overlay.style.left = "0";
+                overlay.style.pointerEvents = "none"; // Lässt alle Klicks durchgehen!
+                container.appendChild(overlay);
+            }
+            
+            // Größe exakt an das aktive Sigma-Canvas anpassen
+            var baseCanvas = container.querySelector("canvas:not(#sigma-arrows-overlay)");
+            if (baseCanvas) {
+                overlay.width = baseCanvas.width;
+                overlay.height = baseCanvas.height;
+                overlay.style.width = baseCanvas.style.width;
+                overlay.style.height = baseCanvas.style.height;
+            }
+            
+            var ctx = overlay.getContext('2d');
+            if (ctx) {
+                // Unser eigenes Canvas komplett leeren
+                ctx.clearRect(0, 0, overlay.width, overlay.height);
+                
+                // Pfeile zeichnen
+                a.iterEdges(function(e) {
+                    if (e.hidden) return;
 
-                    a.iterEdges(function(e) {
-                        if (e.hidden) return;
+                    var sourceNode = a._core.graph.nodesIndex[e.source];
+                    var targetNode = a._core.graph.nodesIndex[e.target];
+                    if (!sourceNode || !targetNode || sourceNode.hidden || targetNode.hidden) return;
 
-                        var sourceNode = a._core.graph.nodesIndex[e.source];
-                        var targetNode = a._core.graph.nodesIndex[e.target];
-                        if (!sourceNode || !targetNode || sourceNode.hidden || targetNode.hidden) return;
+                    var x1 = sourceNode.displayX;
+                    var y1 = sourceNode.displayY;
+                    var x2 = targetNode.displayX;
+                    var y2 = targetNode.displayY;
 
-                        var x1 = sourceNode.displayX;
-                        var y1 = sourceNode.displayY;
-                        var x2 = targetNode.displayX;
-                        var y2 = targetNode.displayY;
+                    if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) return;
 
-                        // Harte Sicherheitsprüfung auf gültige Zahlenwerte
-                        if (isNaN(x1) || isNaN(y1) || isNaN(x2) || isNaN(y2)) return;
+                    var size = parseFloat(e.size) || 1;
+                    var color = e.color || "#000000";
+                    var targetSize = parseFloat(targetNode.displaySize) || 4;
 
-                        var size = parseFloat(e.size) || 1;
-                        var color = e.color || "#000000";
-                        var targetSize = parseFloat(targetNode.displaySize) || 4;
+                    var angle = Math.atan2(y2 - y1, x2 - x1);
+                    if (isNaN(angle)) return;
 
-                        // Winkel berechnen
-                        var angle = Math.atan2(y2 - y1, x2 - x1);
-                        if (isNaN(angle)) return;
+                    var stopDist = targetSize + (size * 0.3) + 2.0; 
+                    var arrowX = x2 - stopDist * Math.cos(angle);
+                    var arrowY = y2 - stopDist * Math.sin(angle);
 
-                        // Exakte Landezone am Knotenrand definieren
-                        var stopDist = targetSize + (size * 0.3) + 2.0; 
-                        var arrowX = x2 - stopDist * Math.cos(angle);
-                        var arrowY = y2 - stopDist * Math.sin(angle);
+                    var arrowSize = Math.max(size * 2.3, 8.0);
 
-                        var arrowSize = Math.max(size * 2.3, 8.0);
-
-                        // Pfad-Isolierung: Wir starten einen komplett frischen Zeichenpfad
-                        ctx.beginPath();
-                        ctx.fillStyle = color;
-                        ctx.strokeStyle = color;
-                        ctx.lineWidth = 1;
-                        
-                        ctx.moveTo(arrowX, arrowY);
-                        ctx.lineTo(
-                            arrowX - arrowSize * Math.cos(angle - Math.PI / 8),
-                            arrowY - arrowSize * Math.sin(angle - Math.PI / 8)
-                        );
-                        ctx.lineTo(
-                            arrowX - arrowSize * Math.cos(angle + Math.PI / 8),
-                            arrowY - arrowSize * Math.sin(angle + Math.PI / 8)
-                        );
-                        
-                        ctx.closePath(); // Schließt exakt NUR unser Dreieck
-                        ctx.fill();      // Füllt exakt NUR unser Dreieck aus
-                    });
-
-                    // Canvas-Zustand wiederherstellen
-                    ctx.restore();
-                }
+                    ctx.beginPath();
+                    ctx.fillStyle = color;
+                    ctx.moveTo(arrowX, arrowY);
+                    ctx.lineTo(
+                        arrowX - arrowSize * Math.cos(angle - Math.PI / 8),
+                        arrowY - arrowSize * Math.sin(angle - Math.PI / 8)
+                    );
+                    ctx.lineTo(
+                        arrowX - arrowSize * Math.cos(angle + Math.PI / 8),
+                        arrowY - arrowSize * Math.sin(angle + Math.PI / 8)
+                    );
+                    ctx.closePath();
+                    ctx.fill();
+                });
             }
         } catch(err) {
-            console.error("Pfeil-Zeichnen fehlgeschlagen:", err);
+            console.error("Fehler beim Overlay-Pfeil-Rendering:", err);
         }
     };
     // ==========================================================
