@@ -102,6 +102,14 @@ function initSigma(config) {
 			}
 		
 		);
+
+		// Zwinge alle Kanten gerade Pfeile zu sein und skaliere die Stärke basierend auf dem Gephi-Gewicht
+		a.iterEdges(
+			function (e) {
+				e.type = "arrow";
+				e.size = (e.size) ? e.size * 2.5 : 1.5; // Erhöht die Kantendicke spürbar im Web
+			}
+		);
 	
 		a.bind("upnodes", function (a) {
 		    nodeActive(a.content[0])
@@ -453,7 +461,7 @@ function nodeActive(a) {
             colour: b.color
         };
         
-   	   if (a==b.source) outgoing[b.target]=n;		//SAH
+       if (a==b.source) outgoing[b.target]=n;		//SAH
 	   else if (a==b.target) incoming[b.source]=n;		//SAH
        if (a == b.source || a == b.target) sigInst.neighbors[a == b.target ? b.source : b.target] = n;
        b.hidden = !1, b.attr.color = "rgba(0, 0, 0, 1)";
@@ -480,7 +488,7 @@ function nodeActive(a) {
     var createList=function(c) {
         var f = [];
     	var e = [],
-      	 	 //c = sigInst.neighbors,
+     	 	 //c = sigInst.neighbors,
        		 g;
     for (g in c) {
         var d = sigInst._core.graph.nodesIndex[g];
@@ -619,5 +627,3 @@ function showCluster(a) {
     }
     return !1
 }
-
-
