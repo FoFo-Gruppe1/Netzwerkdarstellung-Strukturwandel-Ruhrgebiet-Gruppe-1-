@@ -84,6 +84,69 @@ function initSigma(config) {
     a.neighbors = {};
     a.detail = !1;
 
+    // ==========================================================
+    // UNBLOCKIERBARER LOW-LEVEL PIXEL-INJEKTOR (PFEIL-HOOK)
+    // ==========================================================
+    // Wir klinken uns direkt in die Haupt-Zeichenmethode der Instanz ein.
+    // Sobald Sigma fertig gezeichnet hat, malen wir unsere Pfeilspitzen.
+    var originalDraw = a.draw;
+    a.draw = function() {
+        // 1. Lass Sigma ganz normal alles zeichnen
+        originalDraw.apply(a, arguments);
+        
+        try {
+            // 2. Greife das Kanten-Canvas direkt ab
+            var edgeCanvas = a._core.domElements.edges;
+            if (edgeCanvas) {
+                var ctx = edgeCanvas.getContext('2d');
+                if (ctx) {
+                    a.iterEdges(function(e) {
+                        if (e.hidden) return;
+
+                        var sourceNode = a._core.graph.nodesIndex[e.source];
+                        var targetNode = a._core.graph.nodesIndex[e.target];
+                        if (!sourceNode || !targetNode || sourceNode.hidden || targetNode.hidden) return;
+
+                        var x1 = sourceNode.displayX;
+                        var y1 = sourceNode.displayY;
+                        var x2 = targetNode.displayX;
+                        var y2 = targetNode.displayY;
+
+                        var size = e.size || 1;
+                        var color = e.color || "#000000";
+                        var targetSize = targetNode.displaySize || 4;
+
+                        // Winkel der Beziehungslinie berechnen
+                        var angle = Math.atan2(y2 - y1, x2 - x1);
+
+                        // Positioniere die Pfeilspitze exakt am Rand des Zielknotens
+                        var stopDist = targetSize + (size * 0.35) + 1.5; 
+                        var arrowX = x2 - stopDist * Math.cos(angle);
+                        var arrowY = y2 - stopDist * Math.sin(angle);
+
+                        // Zeichne die Pfeilspitze direkt auf das Canvas
+                        var arrowSize = Math.max(size * 2.5, 8.5);
+                        ctx.fillStyle = color;
+                        ctx.beginPath();
+                        ctx.moveTo(arrowX, arrowY);
+                        ctx.lineTo(
+                            arrowX - arrowSize * Math.cos(angle - Math.PI / 8),
+                            arrowY - arrowSize * Math.sin(angle - Math.PI / 8)
+                        );
+                        ctx.lineTo(
+                            arrowX - arrowSize * Math.cos(angle + Math.PI / 8),
+                            arrowY - arrowSize * Math.sin(angle + Math.PI / 8)
+                        );
+                        ctx.closePath();
+                        ctx.fill();
+                    });
+                }
+            }
+        } catch(err) {
+            console.error("Fehler beim Pfeil-Rendering:", err);
+        }
+    };
+    // ==========================================================
 
     dataReady = function() {//This is called as soon as data is loaded
 		a.clusters = {};
@@ -120,67 +183,6 @@ function initSigma(config) {
 
 		a.draw();
 		configSigmaElements(config);
-
-		// ==========================================================
-		// UNBLOCKIERBARER LOW-LEVEL PIXEL-INJEKTOR (PFEIL-DRAW)
-		// ==========================================================
-		// Wir zeichnen die Pfeile komplett eigenständig im Millisekundentakt.
-		// Das umgeht jede einzelne Sperre des Sigma-Rendersystems!
-		setInterval(function() {
-			if (!sigInst || !sigInst._core) return;
-			
-			// Hole die Canvas-Elemente direkt aus dem HTML-Dokument
-			var containers = document.querySelectorAll("#sigma-canvas canvas");
-			if (containers.length < 2) return;
-			
-			// Wir zeichnen die Pfeile auf das oberste Canvas (meistens das Node- oder Mouse-Canvas),
-			// damit sie garantiert über den Linien liegen!
-			var targetCanvas = containers[containers.length - 1]; 
-			var ctx = targetCanvas.getContext('2d');
-			if (!ctx) return;
-
-			sigInst.iterEdges(function(e) {
-				if (e.hidden) return;
-
-				var sourceNode = sigInst._core.graph.nodesIndex[e.source];
-				var targetNode = sigInst._core.graph.nodesIndex[e.target];
-				if (!sourceNode || !targetNode || sourceNode.hidden || targetNode.hidden) return;
-
-				var x1 = sourceNode.displayX;
-				var y1 = sourceNode.displayY;
-				var x2 = targetNode.displayX;
-				var y2 = targetNode.displayY;
-
-				var size = e.size || 1;
-				var color = e.color || "#000000";
-				var targetSize = targetNode.displaySize || 4;
-
-				// Winkel der Verbindungslinie berechnen
-				var angle = Math.atan2(y2 - y1, x2 - x1);
-
-				// Spitze exakt am Außenrand des Knotens platzieren
-				var stopDist = targetSize + (size * 0.3) + 2; 
-				var arrowX = x2 - stopDist * Math.cos(angle);
-				var arrowY = y2 - stopDist * Math.sin(angle);
-
-				// Pfeilspitze zeichnen
-				var arrowSize = Math.max(size * 2.5, 8);
-				ctx.fillStyle = color;
-				ctx.beginPath();
-				ctx.moveTo(arrowX, arrowY);
-				ctx.lineTo(
-					arrowX - arrowSize * Math.cos(angle - Math.PI / 8),
-					arrowY - arrowSize * Math.sin(angle - Math.PI / 8)
-				);
-				ctx.lineTo(
-					arrowX - arrowSize * Math.cos(angle + Math.PI / 8),
-					arrowY - arrowSize * Math.sin(angle + Math.PI / 8)
-				);
-				ctx.closePath();
-				ctx.fill();
-			});
-		}, 30); // Aktualisiert das Bild alle 30 Millisekunden live im Browser!
-		// ==========================================================
 	}
 
     if (data.indexOf("gexf")>0 || data.indexOf("xml")>0)
